@@ -33,9 +33,8 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
           }
 
     ''';
-      final QueryResult result = await client.query(QueryOptions(
-        document: gql(query),
-      ));
+      final QueryResult result = await client.query(
+          QueryOptions(document: gql(query), fetchPolicy: FetchPolicy.noCache));
 
       if (result.hasException) {
         throw NtwkException(result.exception.toString());
@@ -71,6 +70,7 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
        ''';
 
       final result = await client.mutate(MutationOptions(
+        fetchPolicy: FetchPolicy.noCache,
         document: gql(mutation),
         variables: {
           'id': id,
@@ -118,16 +118,18 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
       
           ''';
 
-      final result = await client
-          .mutate(MutationOptions(document: gql(mutation), variables: {
-        'data': {
-          "Title": title,
-          "Description": description,
-          "Completed": false,
-          "publishedAt":
-              "${DateTime.now().toUtc().toIso8601String().split('.')[0]}Z",
-        }
-      }));
+      final result = await client.mutate(MutationOptions(
+          document: gql(mutation),
+          fetchPolicy: FetchPolicy.noCache,
+          variables: {
+            'data': {
+              "Title": title,
+              "Description": description,
+              "Completed": false,
+              "publishedAt":
+                  "${DateTime.now().toUtc().toIso8601String().split('.')[0]}Z",
+            }
+          }));
 
       if (result.hasException) {
         throw NtwkException(result.exception.toString());
@@ -135,6 +137,7 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
       final newTask = result.data!['createTask']['data'];
 
       _taskList.add(TaskModel.fromJson(newTask));
+      print('from update: $_taskList');
     } on GraphQLError catch (e) {
       throw NtwkException(e.message);
     }
@@ -155,8 +158,10 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
       
           ''';
 
-      final result = await client.mutate(
-          MutationOptions(document: gql(mutation), variables: {"id": id}));
+      final result = await client.mutate(MutationOptions(
+          document: gql(mutation),
+          fetchPolicy: FetchPolicy.noCache,
+          variables: {"id": id}));
 
       if (result.hasException) {
         throw NtwkException(result.exception.toString());

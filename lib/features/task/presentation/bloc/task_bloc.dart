@@ -25,10 +25,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       emit(TaskLoadingState());
       final result = await fetchTasksUsecase(NoParams());
 
-      result.fold(
-        (l) => emit(TaskErrorState(l.message)),
-        (r) => emit(TaskLoadedState(r)),
-      );
+      result.fold((l) => emit(TaskErrorState(l.message)), (r) {
+        emit(TaskLoadedState(r));
+      });
     });
 
     on<UpdateTaskCompletionEvent>((event, emit) async {
@@ -47,10 +46,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final result = await addNewTaskUsecase(
           AddNewTaskCreds(title: event.title, description: event.description));
 
-      result.fold(
-        (l) => emit(TaskErrorState(l.message)),
-        (r) => add(LoadTasksEvent()),
-      );
+      result.fold((l) => emit(TaskErrorState(l.message)), (r) {
+        add(LoadTasksEvent());
+      });
     });
 
     on<DeleteTaskEvent>((event, emit) async {
@@ -58,10 +56,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       try {
         final result = await deleteTaskUsecase(DeleteTaskCreds(id: event.id));
 
-        result.fold(
-          (l) => emit(TaskErrorState(l.message)),
-          (_) => add(LoadTasksEvent()), // Trigger fetch after successful delete
-        );
+        result.fold((l) => emit(TaskErrorState(l.message)),
+            (_) => add(LoadTasksEvent()));
       } catch (e) {
         emit(TaskErrorState(e.toString()));
       }
