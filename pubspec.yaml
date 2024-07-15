@@ -43,6 +43,7 @@ dependencies:
   animated_snack_bar:
   flutter_slidable:
   responsive_sizer:
+  shared_preferences: ^2.0.8
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/core/constants/app_colors.dart';
 import 'package:frontend/core/utils/app_snackbar.dart';
+import 'package:frontend/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:frontend/features/task/presentation/bloc/task_bloc.dart';
 import 'package:frontend/features/task/presentation/widgets/custom_list_tile.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
@@ -35,6 +36,14 @@ class _TaskScreenState extends State<TaskScreen> {
           'To-Do List',
           style: TextStyle(color: white, fontWeight: FontWeight.bold),
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.read<AuthBloc>().add(LogoutEvent());
+            },
+            icon: Icon(Icons.logout_rounded),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -86,6 +95,8 @@ class _TaskScreenState extends State<TaskScreen> {
                                             descripController.text.trim(),
                                       ));
                                 }
+                                titleController.clear();
+                                descripController.clear();
                                 Navigator.of(context).pop();
                               },
                               child: Text(
@@ -109,49 +120,59 @@ class _TaskScreenState extends State<TaskScreen> {
         backgroundColor: Colors.deepPurple,
         child: const Icon(Icons.add, color: white),
       ),
-      body: BlocConsumer<TaskBloc, TaskState>(
-        listener: (context, state) {
-          if (state is TaskErrorState) {
-            return AppSnack.error(context, state.message);
-          }
-          if (state is TaskLoadedState) {
-            return AppSnack.success(context, 'Tasks fetched successfully...');
-          }
-        },
-        builder: (context, state) {
-          if (state is TaskLoadingState) {
-            return const Center(child: CircularProgressIndicator.adaptive());
-          }
-          if (state is TaskLoadedState) {
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: ListView.builder(
-                itemCount: state.tasks.length,
-                itemBuilder: (context, index) {
-                  final task = state.tasks[index];
-                  return CustomListTile(
-                    value: task.completed,
-                    id: task.id,
-                    title: task.title,
-                    description: task.description,
-                    onChanged: (value) {
-                      context
-                          .read<TaskBloc>()
-                          .add(UpdateTaskCompletionEvent(task.id, value!));
-                    },
-                    onDelete: (context) {
-                      context
-                          .read<TaskBloc>()
-                          .add(DeleteTaskEvent(id: task.id));
-                    },
-                  );
-                },
-              ),
-            );
-          } else {
-            return Container();
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is AuthInitial) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
+            },
+          ),
+          BlocListener<TaskBloc, TaskState>(
+            listener: (context, state) {
+              if (state is TaskErrorState) {
+                AppSnack.error(context, state.message);
+              }
+            },
+          ),
+        ],
+        child: BlocBuilder<TaskBloc, TaskState>(
+          builder: (context, state) {
+            if (state is TaskLoadingState) {
+              return const Center(child: CircularProgressIndicator.adaptive());
+            }
+            if (state is TaskLoadedState) {
+              return Padding(
+                padding: const EdgeInsets.all(20),
+                child: ListView.builder(
+                  itemCount: state.tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = state.tasks[index];
+                    return CustomListTile(
+                      value: task.completed,
+                      id: task.id,
+                      title: task.title,
+                      description: task.description,
+                      onChanged: (value) {
+                        context
+                            .read<TaskBloc>()
+                            .add(UpdateTaskCompletionEvent(task.id, value!));
+                      },
+                      onDelete: (context) {
+                        context
+                            .read<TaskBloc>()
+                            .add(DeleteTaskEvent(id: task.id));
+                      },
+                    );
+                  },
+                ),
+              );
+            } else {
+              return Container();
+            }
+          },
+        ),
       ),
     );
   }
